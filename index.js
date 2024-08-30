@@ -1,10 +1,12 @@
 require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
-const app = express()
 const cors = require('cors')
 const mongoose = require('mongoose')
 const Person = require('./models/person')
+
+const app = express()
+
 
 app.use(cors())
 
@@ -57,15 +59,18 @@ app.post('/api/persons', (request,response,next) => {
         return next(error);
     }
 
+    if (body.name.length < 3){
+        const error = new Error('Name must be at least 3 characters long!');
+        return next(error);   
+    }
+
     const person = new Person({
-        id: Math.random(0,1000),
         name: body.name,
         number: body.number
     })
     
-    person.save().then(savedPerson => {
-        response.json(savedPerson)
-    })
+    person.save()
+    .then(savedPerson => response.json(savedPerson))
     .catch(error => next(error))
 
     morgan.token()
@@ -87,12 +92,13 @@ app.put('/api/persons/:id', (request, response, next) => {
 })
 
 const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
-    if (error.name === 'CastError') {
-        return response.status(400).send({ error: 'id not found' })
-    } else {
-        return response.status(400).send({ error: error.message })
-    }
+    if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message });
+      } else if (error.name === 'CastError') {
+        return response.status(400).json({ error: 'id not found' });
+      } else {
+        return response.status(400).json({ error: error.message });
+      }
 }
 
 app.use(errorHandler)
