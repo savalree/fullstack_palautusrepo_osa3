@@ -57,11 +57,10 @@ app.post('/api/persons', (request,response,next) => {
         return next(error);
     }
 
-    // if(persons.find(person => person.name === body.name)){
-    //     return response.status(400).json({
-    //         error: 'name must be unique'
-    //     })
-    // }
+    if(persons.find(person => person.name === body.name)){
+        const error = new Error('name must be unique');
+        return next(error);
+    }
 
     const person = new Person({
         id: Math.random(0,1000),
@@ -75,6 +74,21 @@ app.post('/api/persons', (request,response,next) => {
     .catch(error => next(error))
 
     morgan.token()
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+
+    const person = {
+        name: body.name,
+        number: body.number
+    }
+  
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+      .then(updatedPerson => {
+        response.json(updatedPerson)
+      })
+      .catch(error => next(error))
 })
 
 const errorHandler = (error, request, response, next) => {
