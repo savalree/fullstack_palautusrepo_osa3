@@ -44,19 +44,17 @@ app.delete('/api/persons/:id', (request, response) => {
     })
 })
 
-app.post('/api/persons', (request,response) => {
+app.post('/api/persons', (request,response,next) => {
     const body = request.body
 
     if(!body.name){
-        return response.status(400).json({
-            error: 'name missing'
-        })
+        const error = new Error('name missing');
+        return next(error);
     }
 
     if(!body.number){
-        return response.status(400).json({
-            error: 'number missing'
-        })
+        const error = new Error('number missing');
+        return next(error);
     }
 
     // if(persons.find(person => person.name === body.name)){
@@ -74,9 +72,20 @@ app.post('/api/persons', (request,response) => {
     person.save().then(savedPerson => {
         response.json(savedPerson)
     })
-    morgan.token()
+    .catch(error => next(error))
 
+    morgan.token()
 })
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    return response.status(400).send({ error: error.message })
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
