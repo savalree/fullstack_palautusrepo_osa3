@@ -20,20 +20,20 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response,next) => {
     const id = request.params.id
-    const person = persons.find(person => person.id === id)
-    if(person){
-        response.json(person)
-    } else {
-        response.status(404).end()
-    }
+
+    Person.findById(id).then(result =>{
+        response.json(result)
+    })
+    .catch(error => next(error))
 })
 
 app.get('/info', (request, response) => {
-    const p = persons.length
-    let now = new Date()
-    response.send(`Phonebook has info for ${p} people <p>${now}</p>`)
+    Person.countDocuments().then( persons => {
+        let now = new Date()
+        response.send(`Phonebook has info for ${persons} people <p>${now}</p>`)
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -54,11 +54,6 @@ app.post('/api/persons', (request,response,next) => {
 
     if(!body.number){
         const error = new Error('number missing');
-        return next(error);
-    }
-
-    if(persons.find(person => person.name === body.name)){
-        const error = new Error('name must be unique');
         return next(error);
     }
 
@@ -93,10 +88,11 @@ app.put('/api/persons/:id', (request, response, next) => {
 
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
-  
-    return response.status(400).send({ error: error.message })
-
-    next(error)
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'id not found' })
+    } else {
+        return response.status(400).send({ error: error.message })
+    }
 }
 
 app.use(errorHandler)
